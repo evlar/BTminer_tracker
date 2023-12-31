@@ -2,15 +2,14 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import pandas as pd
 import os
-import asciichartpy
 
 def load_hotkey_names(file_path):
     if os.path.exists(file_path):  
         return pd.read_csv(file_path).set_index('hotkey').to_dict()['hotkey_name']
     return {}
 
-def plot_combined_hotkeys(df, variable, hotkey_names, visualization_mode, exclude_hotkeys=[]):
-    
+def plot_combined_hotkeys(df, variable, hotkey_names, exclude_hotkeys=[]):
+    plt.figure(figsize=(15, 8))
     
     # Convert 'stake' variable to numeric if needed
     if variable == 'stake':
@@ -24,43 +23,26 @@ def plot_combined_hotkeys(df, variable, hotkey_names, visualization_mode, exclud
     unique_hotkeys = df['hotkey'].unique()
     sorted_hotkeys = sorted(unique_hotkeys, key=lambda x: hotkey_names.get(x, 'Unknown'))
 
-    if visualization_mode == '1':
-        # Use text-based visualization
-        for hotkey in sorted_hotkeys:
-            if hotkey in exclude_hotkeys:
-                continue
+    # Plot data for each hotkey, excluding specified hotkeys
+    for hotkey in sorted_hotkeys:
+        if hotkey in exclude_hotkeys:
+            continue
 
-            hotkey_data = df[df['hotkey'] == hotkey]
-            if not hotkey_data.empty:
-                # Convert the selected variable to a list of values
-                values = hotkey_data[variable].tolist()
-                # Print the hotkey name
-                print(f"\n{hotkey_names.get(hotkey, hotkey)}:")
-                # Plot using asciichartpy
-                print(asciichartpy.plot(values, {'height': 10}))
-    else:
-        # Use graphical visualization
-        # Plot data for each hotkey, excluding specified hotkeys
-        for hotkey in sorted_hotkeys:
-            if hotkey in exclude_hotkeys:
-                continue
-    
-            hotkey_data = df[df['hotkey'] == hotkey]
-            if not hotkey_data.empty:
-                plt.figure(figsize=(15, 8))
-                plt.plot(hotkey_data['timestamp'], hotkey_data[variable], label=hotkey_names.get(hotkey, hotkey), marker='o', linestyle='-')
-    
-        # Formatting the plot
-        plt.title(f'{variable.capitalize()} over time for all hotkeys')
-        plt.xlabel('Time')
-        plt.ylabel(variable.capitalize())
-        plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
-        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M'))
-        plt.xticks(rotation=45)
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        plt.show()
+        hotkey_data = df[df['hotkey'] == hotkey]
+        if not hotkey_data.empty:
+            plt.plot(hotkey_data['timestamp'], hotkey_data[variable], label=hotkey_names.get(hotkey, hotkey), marker='o', linestyle='-')
+
+    # Formatting the plot
+    plt.title(f'{variable.capitalize()} over time for all hotkeys')
+    plt.xlabel('Time')
+    plt.ylabel(variable.capitalize())
+    plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M'))
+    plt.xticks(rotation=45)
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
 
 
 def select_hotkey(df, hotkey_names, list_all=False):
@@ -87,8 +69,8 @@ def select_hotkey(df, hotkey_names, list_all=False):
         print("Invalid input. Please enter a number.")
     return None
 
-def plot_variable(df, variable, hotkey, hotkey_names, visualization_mode):
-    
+def plot_variable(df, variable, hotkey, hotkey_names):
+    plt.figure(figsize=(15, 8))
     
     if variable == 'stake':
         df[variable] = df[variable].str.replace('τ', '').astype(float)
@@ -96,34 +78,22 @@ def plot_variable(df, variable, hotkey, hotkey_names, visualization_mode):
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     df.sort_values('timestamp', inplace=True)
 
+    hotkey_data = df[df['hotkey'] == hotkey]
+    if not hotkey_data.empty:
+        plt.plot(hotkey_data['timestamp'], hotkey_data[variable], label=hotkey_names.get(hotkey, hotkey), marker='o', linestyle='-')
 
-    if visualization_mode == '1':
-        # Use text-based visualization
-        hotkey_data = df[df['hotkey'] == hotkey]
-        if not hotkey_data.empty:
-            # Convert the selected variable to a list of values
-            values = hotkey_data[variable].tolist()
-            # Plot using asciichartpy
-            print(asciichartpy.plot(values, {'height': 10}))
-    else:
-        # Use graphical visualization
-        hotkey_data = df[df['hotkey'] == hotkey]
-        if not hotkey_data.empty:
-            plt.figure(figsize=(15, 8))
-            plt.plot(hotkey_data['timestamp'], hotkey_data[variable], label=hotkey_names.get(hotkey, hotkey), marker='o', linestyle='-')
-    
-        plt.title(f'{variable.capitalize()} over time for {hotkey_names.get(hotkey, hotkey)}')
-        plt.xlabel('Time')
-        plt.ylabel(variable.capitalize())
-        plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
-        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M'))
-        plt.xticks(rotation=45)
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        plt.show()
+    plt.title(f'{variable.capitalize()} over time for {hotkey_names.get(hotkey, hotkey)}')
+    plt.xlabel('Time')
+    plt.ylabel(variable.capitalize())
+    plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M'))
+    plt.xticks(rotation=45)
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
 
-def main(visualization_mode):
+def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     filename = os.path.join(current_dir, 'hotkeys.log')
     hotkey_names_file = os.path.join(current_dir, 'hotkey_names.csv')
@@ -168,7 +138,7 @@ def main(visualization_mode):
 
                 variable = variable_map.get(choice)
                 if variable:
-                    plot_variable(df, variable, hotkey, hotkey_names, visualization_mode)
+                    plot_variable(df, variable, hotkey, hotkey_names)
                 elif choice == '6':
                     continue
                 else:
@@ -221,7 +191,7 @@ def main(visualization_mode):
 
             variable = variable_map.get(comp_choice)
             if variable:
-                plot_combined_hotkeys(df, variable, hotkey_names, exclude_hotkeys, visualization_mode)
+                plot_combined_hotkeys(df, variable, hotkey_names, exclude_hotkeys)
             elif comp_choice == '6':
                 pass  # Return to the main menu
             else:
@@ -234,7 +204,4 @@ def main(visualization_mode):
             print("Invalid choice. Please enter a number between 1 and 3.")
 
 if __name__ == "__main__":
-    # Capture user input for visualization mode here
-    visualization_mode = input("Enter visualization mode (1 for text, 2 for graphical): ")
-    main(visualization_mode)
-
+    main()
